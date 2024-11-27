@@ -9,7 +9,7 @@ class DataProcessor:
 		self.test_dataset = test_dataset
 		self.time_steps = time_steps
 		self.X_scaler = preprocessing.MinMaxScaler()
-		# self.y_scaler = preprocessing.MinMaxScaler()
+		self.y_scaler = preprocessing.MinMaxScaler()
 		self.target_column = target_column
 
 	def create_sequences(self, data, target):
