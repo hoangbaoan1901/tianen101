@@ -1,0 +1,81 @@
+\chapter{Phân tích mở rộng \\ Thực nghiệm và so sánh mở rộng}
+\section{Vấn đề bài báo gốc} 
+\section{Mô hình của tác giả} 
+\subsection{LSTM}
+\subsection{Random Forest}
+
+
+\section{Mô hình của sinh viên}
+\subsection{GRU}
+\subsection{XGBoost}
+\subsubsection*{Giới thiệu}
+\textit{Boosting} là một trong các kỹ thuật hoc máy kết hợp phổ biến. Bằng cách kết hợp những mô hình yếu lại với nhau - phổ biến nhất là cây quyết định giống như trong thuật toán Random Forest, Boosting cũng đem lại hiệu quả rất tốt. XGBoost là một trong số những mô hình mạnh và đã giành được rất nhiều những thành công và cũng đã có một thời kỳ rất áp đảo trên các cuộc thi trên Kaggle. Ý tưởng tổng quan của kỹ thuật boosting là huấn luyện các mô hình dự đoán một cách tuần tự - các mô hình sau sẽ cố gắng sửa lại những gì còn sai sót của các mô hình từ các bước trước đó.
+\subsubsection*{Gradient Boosting}
+Với ý tưởng tổng quan là cải thiện dự đoán của các mô hình trước, ta có thể hình dung cơ chế hoạt động của Gradient Boosting là như sau
+Ta gọi tập đầu vào là tập $X$, tập đầu ra là $y$. Trước hết ta sẽ tiến hành dự đoán cho cây quyết định thứ nhất. Ở đây ta sẽ sử dụng mô-đun \textit{DecisionTreeRegressor} trong \textit{sci-kit learn}
+\begin{verbatim}
+    from sklearn.tree import DecisionTreeRegressor
+    tree_reg1 = DecisionTreeRegressor()
+    tree_reg1.fit(X, y)
+\end{verbatim}
+Tiếp theo đó, ta sẽ tiếp tục huấn luyện một cây quyết định mới dựa trên lỗi dư thừa (residual error) từ cây quyết định đầu tiên
+\begin{verbatim}
+    y2 = y - tree_reg1.predict(X)
+    tree_reg2 = DecisionTreeRegressor()
+    tree_reg2.fit(X, y2)
+\end{verbatim}
+Tiếp tục lặp lại, như vậy cho đến khi đạt đến một ngưỡng cây nhất định $n$ - một trong những siêu tham số được cài đặt bởi người dùng. Giờ ta đã có một mô hình kết hợp gồm $n$ cây quyết định, và dự đoán của mô hình sẽ được tính bằng tổng dự đoán của các cây
+\begin{verbatim}
+    trees = [tree_reg1, tree_reg2, ..., tree_regn]
+    y_pred = sum(tree.predict(X_test) for tree in trees)
+\end{verbatim}
+Dưới đây sẽ là đoạn mã giả mô phỏng cách hoạt động của mô hình Gradient Boosting\\
+
+\begin{algorithm}[H]
+    \caption{Gradient Boosting với Cây Quyết Định}
+    \SetKwFunction{FitTree}{FitTree}
+    \SetKwFunction{UpdatePredictions}{UpdatePredictions}
+    \SetKwFunction{ComputeResiduals}{ComputeResiduals}
+    \SetKwFunction{PredictTest}{PredictTest}
+    \SetKwProg{Fn}{Function}{:}{}
+    \KwIn{Tập dữ liệu $(X, y)$, số lượng cây $n_{\text{trees}}$, tốc độ học $\alpha$}
+    \KwOut{Dự đoán cho tập kiểm tra $y_{\text{test\_pred}}$}
+    
+    Khởi tạo $\text{trees} \gets []$ (danh sách các cây rỗng)\;
+    
+    \Fn{\FitTree{$X, y$}}{
+        Huấn luyện một DecisionTreeRegressor trên $(X, y)$\;
+        \Return cây đã được huấn luyện\;
+    }
+    
+    \textbf{Bước 1: Huấn luyện cây đầu tiên}\;
+    $\text{tree}_1 \gets$ \FitTree{$X, y$}\;
+    Thêm $\text{tree}_1$ vào $\text{trees}$\;
+    $y_{\text{pred}} \gets \text{tree}_1(X)$ (dự đoán ban đầu)\;
+    
+    \textbf{Bước 2: Huấn luyện các cây tiếp theo}\;
+    \For{$i = 2$ đến $n_{\text{trees}}$}{
+        Tính sai sót: $r \gets y - y_{\text{pred}}$\;
+        $\text{tree}_i \gets$ \FitTree{$X, r$}\;
+        Thêm $\text{tree}_i$ vào $\text{trees}$\;
+        Cập nhật dự đoán: $y_{\text{pred}} \gets y_{\text{pred}} + \alpha \cdot \text{tree}_i(X)$\;
+    }
+    
+    \textbf{Bước 3: Thực hiện dự đoán trên tập kiểm tra}\;
+    $y_{\text{test\_pred}} \gets \sum_{\text{tree} \in \text{trees}} \alpha \cdot \text{tree}(X_{\text{test}})$\;
+    
+    \Return $y_{\text{test\_pred}}$\;
+\end{algorithm}
+\subsubsection*{So sánh Gradient Boosting và XGBoost}
+Những điểm mạnh và cải tiến của mô hình XGBoost so với Gradient Boosting truyền thống:
+\begin{itemize}
+    \item \textbf{Điều chuẩn - Regularization:} XGBoost có thêm một số siêu tham số để penalize những mô hình phức tạp thông qua điều chuẩn L1 và L2 giúp tránh việc overfitting.
+    \item \textbf{Kiểm soát dữ liệu thiếu hoặc thưa:} Trong một số trường hợp, dữ liệu có thể bị thiếu, hoặc các kỹ thuật tiền xử lý dữ liệu đôi khi có thể làm dữ liệu bị thưa. Tuy nhiên, XGBoost đã được tích hợp sẵn sàng thuật toán chia nhánh có kiểm soát dữ liệu thưa.
+    \item \textbf{Thuật toán Weighted Quantile Sketch:} Hầu hết các thuật toán cây hiện có đều chỉ tìm được điểm chia khi các điểm dữ liệu có trọng số bằng nhau (sử dụng thuật toán quantile sketch thông thường). Tuy nhiên, chúng không được thiết kế để xử lý dữ liệu có trọng số. XGBoost có một thuật toán phân tán weighted quantile sketch, cho phép xử lý hiệu quả dữ liệu có trọng số không đồng đều.
+    \item \textbf{Cấu trúc khối để học song song (Block Structure for Parallel Learning):} Để tính toán nhanh hơn, XGBoost có thể sử dụng nhiều lõi (cores) trên CPU. Điều này khả thi nhờ vào cấu trúc khối trong thiết kế hệ thống. Dữ liệu được sắp xếp và lưu trữ trong các đơn vị bộ nhớ gọi là blocks. Khác với các thuật toán khác, cách tiếp cận này cho phép tái sử dụng cấu trúc dữ liệu đã lưu trữ thay vì tính toán lại qua mỗi lần lặp. Tính năng này đặc biệt hữu ích cho các bước như tìm điểm chia (split finding) và lấy mẫu cột (column sub-sampling).
+    \item \textbf{Nhận thức bộ nhớ đệm (Cache Awareness):} Trong học máy với XGBoost, ngôn ngữ Scala yêu cầu truy cập bộ nhớ không liên tục để lấy các thống kê gradient theo chỉ mục hàng. Do đó, Tianqi Chen đã thiết kế XGBoost để tối ưu hóa việc sử dụng phần cứng. Quá trình tối ưu này được thực hiện bằng cách cấp phát các bộ đệm nội bộ (internal buffers) trong từng luồng xử lý, nơi mà workflow có thể lưu trữ thống kê gradient. Nhờ đó, các cây được xây dựng song song một cách hiệu quả hơn, đặc biệt khi tận dụng ngôn ngữ Julia và Java.
+    \item \textbf{Tính toán ngoài bộ nhớ (Out-of-Core Computing):} Tính năng này tối ưu hóa không gian đĩa có sẵn và tận dụng tối đa khi xử lý các tập dữ liệu lớn không thể vừa trong bộ nhớ RAM.
+\end{itemize}
+
+\subsection{Stacking}
+\section{So sánh và kết luận}

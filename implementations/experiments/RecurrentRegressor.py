@@ -28,11 +28,13 @@ class LSTMRegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
                     self.units_[i], return_sequences=True, kernel_regularizer=self.kernel_regularizer, activation='relu'))
             self.model.add(tf.keras.layers.Dropout(self.dropouts[i]))
         self.model.add(tf.keras.layers.Dense(1))
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse')
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(
+            learning_rate=1e-3), loss='mse')
         if self.patience > 0:
             early_stopping = tf.keras.callbacks.EarlyStopping(
                 monitor='val_loss', patience=self.patience, restore_best_weights=True)
-            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[early_stopping], validation_split=self.validation_split, verbose=0)
+            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[
+                           early_stopping], validation_split=self.validation_split, verbose=0)
         else:
             self.model.fit(X, y, batch_size=self.batch_size,
                            epochs=self.epochs, verbose=0)
@@ -88,11 +90,13 @@ class GRURegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
                     self.units_[i], return_sequences=True, kernel_regularizer=self.kernel_regularizer, activation='relu'))
             self.model.add(tf.keras.layers.Dropout(self.dropouts[i]))
         self.model.add(tf.keras.layers.Dense(1))
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse')
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(
+            learning_rate=1e-3), loss='mse')
         if self.patience > 0:
             early_stopping = tf.keras.callbacks.EarlyStopping(
                 monitor='val_loss', patience=self.patience, restore_best_weights=True)
-            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[early_stopping], validation_split=self.validation_split, verbose=0)
+            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[
+                           early_stopping], validation_split=self.validation_split, verbose=0)
         else:
             self.model.fit(X, y, batch_size=self.batch_size,
                            epochs=self.epochs, verbose=0)
@@ -122,7 +126,7 @@ class GRURegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
         return self.model.layers
 
 
-class CNNGRURegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
+class MLPRegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
     def __init__(self, units=[64], dropouts=[0.2], kernel_regularizer=None, patience=0, batch_size=32, epochs=50, validation_split=0.1):
         """Note: Units and dropouts list should be of the same length"""
         super().__init__()
@@ -139,26 +143,23 @@ class CNNGRURegressor(sklearn.base.BaseEstimator, sklearn.base.RegressorMixin):
     def fit(self, X, y):
         tf.keras.backend.clear_session()
         self.model.add(tf.keras.layers.Input(shape=(X.shape[1], X.shape[2])))
-        # CNN Layer
-        self.model.add(tf.keras.layers.Conv1D(filters=32, kernel_size=(3), padding='same'))
-        self.model.add(tf.keras.layers.BatchNormalization())
-        self.model.add(tf.keras.layers.Activation('relu'))
-        self.model.add(tf.keras.layers.MaxPooling1D(pool_size=2))
-
+        self.model.add(tf.keras.layers.Flatten())
         for i in range(len(self.units_)):
             if i == len(self.units_) - 1:
-                self.model.add(tf.keras.layers.GRU(
-                    self.units_[i], return_sequences=False, kernel_regularizer=self.kernel_regularizer, activation='relu'))
+                self.model.add(tf.keras.layers.Dense(
+                    self.units_[i], kernel_regularizer=self.kernel_regularizer, activation='relu'))
             else:
-                self.model.add(tf.keras.layers.GRU(
-                    self.units_[i], return_sequences=True, kernel_regularizer=self.kernel_regularizer, activation='relu'))
+                self.model.add(tf.keras.layers.Dense(
+                    self.units_[i], kernel_regularizer=self.kernel_regularizer, activation='relu'))
             self.model.add(tf.keras.layers.Dropout(self.dropouts[i]))
         self.model.add(tf.keras.layers.Dense(1))
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse')
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(
+            learning_rate=1e-3), loss='mse')
         if self.patience > 0:
             early_stopping = tf.keras.callbacks.EarlyStopping(
                 monitor='val_loss', patience=self.patience, restore_best_weights=True)
-            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[early_stopping], validation_split=self.validation_split, verbose=0)
+            self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs, callbacks=[
+                           early_stopping], validation_split=self.validation_split, verbose=0)
         else:
             self.model.fit(X, y, batch_size=self.batch_size,
                            epochs=self.epochs, verbose=0)
